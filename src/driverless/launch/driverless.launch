@@ -1,0 +1,79 @@
+<!-- -->
+<launch>
+
+	<arg name="roadnet_file" default=""/>     <!--默认为空-->
+	<arg name="max_speed" default="1" />
+	<arg name="use_extern_controller" default="true"/>
+	<arg name="which_extern_controller" default="lan_controller"/>
+	<arg name="which_path_tracking_controller" default="pure_tracking_controller"/>
+	
+	<arg name="rate" default="30" />
+	<arg name="delay_time" default="0.3" />
+	
+	<node name="livlidar_in_base" pkg="tf" type="static_transform_publisher" args="0.8 0 0 0 0 0 50 base_link  livox_frame 20"/>
+	<node name="lslidar_in_base" pkg="tf" type="static_transform_publisher" args="0 0 1.6 0 0 0 50 base_link  laser_link 20"/>
+	
+	<!-- 底层控制 -->
+	<include file="$(find pc_stm32)/launch/pc_stm.launch" />
+	
+	<!-- 上层控制 -->
+	<node name="driverless_node" pkg="driverless" type="driverless_node" output="screen" launch-prefix="gnome-terminal -x"> <!-- launch-prefix="gnome-terminal -x" -->
+		
+		<rosparam file="$(find driverless)/config/vehicle_params.yaml" command="load"/>
+		<!-- main -->
+		<param name="is_offline_debug" value="false"/>
+		<param name="max_speed" value="$(arg max_speed)"/>
+		<param name="odom_topic" value="/gps_odom"/>  
+<!--	#slam_fused_odom gps_odom	-->
+		<!-- path_tracking -->
+		<param name="min_foresight_distance" value="2.5"/>
+		<param name="max_side_accel" value="0.5"/>
+		<param name="foreSightDis_speedCoefficient" value = "0.3"/>
+		<param name="foreSightDis_latErrCoefficient" value = "0.5"/>
+		<param name="car_state" value="/car_state"/>
+		<param name="which_path_tracking_controller" value="$(arg which_path_tracking_controller)"/>
+		
+		<!-- extern_control -->
+		<param name="use_extern_controller" value="$(arg use_extern_controller)"/>
+		<param name="which_extern_controller" value="$(arg which_extern_controller)"/>
+		<param name="lan_control/local_ip" value="0.0.0.0"/>
+		<param name="lan_control/local_port" value="8080"/>
+		<param name="wan_control/image" value="/usb_cam/image_raw"/>
+		<param name="wan_control/server_ip" value="192.168.8.101"/>  <!--192.168.8.101  192.168.8.115  xhw36.155.113.13   wd62.234.114.48-->
+		<param name="wan_control/sever_port" value="8617"/>
+		<param name="wan_control/image_cut_up" value="100"/>
+		<param name="wan_control/image_cut_down" value="30"/>
+		<param name="wan_control/image_quality" value="50"/>
+
+		<!-- PID -->
+		<param name="steer_pid_ki" value="-0.6"/>
+		<param name="tolerate_laterr" value = "0.05"/>	<!-- 容忍横向偏差 -->
+
+		<!-- aviod -->
+		<param name="is_object" value="/min_dis_obj"/>
+		<param name="safety_distance" value="6.0"/>
+		<param name="timeout" value="0.3"/>
+
+		<!-- reverse control test-->
+		<param name="reverse_test" value="false"/>
+		<param name="reverse_path_flip" value="false"/>
+		<param name="reverse_path_file" value="$(arg roadnet_file)"/>
+	</node>
+
+	<!--slam location -->
+<!--	<include file="$(find lego_loam_bor)/launch/c16/location_c16.launch"/>-->
+	
+	<!-- 导远GPS -->
+	<include file="$(find daoyuan)/launch/daoyuan.launch"/>
+	<include file="$(find rtk)/launch/rtk.launch">
+		<arg name="port" value="/dev/ttyS4"/>
+	</include>
+	
+	<!-- 镭神雷达 -->
+<!--	<include file="$(find lslidar_c16_decoder)/launch/lslidar_c16.launch"/>-->
+
+	<!-- 大疆雷达 聚类-->
+<!--	<include file="$(find livox_ros_driver)/launch/livox_lidar_rviz.launch"/>-->
+<!--	<include file="$(find euclidean_cluster)/launch/euclidean_cluster.launch"/>-->
+
+</launch>

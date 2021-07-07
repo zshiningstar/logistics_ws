@@ -1,0 +1,12 @@
+
+vehicle:
+   max_roadwheel_angle: 12.3
+   min_roadwheel_angle: -12.3
+   min_radius:  5.0
+   max_speed:   4.0
+   wheel_base:  0.88
+   wheel_track: 0.5
+   width:       1.5
+   length:      2.5
+   steer_clearance: 1.0
+   steer_offset: -1.5
