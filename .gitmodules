@@ -1,0 +1,18 @@
+[submodule "src/driverless_common"]
+	path = src/driverless_common
+	url = https://github.com.cnpmjs.org/CastielLiu/driverless_common.git
+[submodule "src/driver/gps_driver"]
+	path = src/driver/gps_driver
+	url = https://github.com/zsx-star/gps_driver.git
+[submodule "src/driver/rtcm3.2"]
+	path = src/driver/rtcm3.2
+	url = https://github.com/CastielLiu/rtcm3.2.git
+[submodule "src/av_console_app"]
+	path = src/av_console_app
+	url = https://github.com.cnpmjs.org/CastielLiu/av_console_app.git
+[submodule "src/driver/livox_ros_driver"]
+	path = src/driver/livox_ros_driver
+	url = https://github.com/zsx-star/livox_ros_driver.git
+[submodule "src/driver/lslidar_c16"]
+	path = src/driver/lslidar_c16
+	url = https://github.com/zsx-star/lslidar_c16.git
