@@ -14,7 +14,7 @@
 	<node name="lslidar_in_base" pkg="tf" type="static_transform_publisher" args="0 0 1.6 0 0 0 50 base_link  laser_link 20"/>
 	
 	<!-- 底层控制 -->
-	<include file="$(find pc_stm32)/launch/pc_stm.launch" />
+<!--	<include file="$(find pc_stm32)/launch/pc_stm.launch" />-->
 	
 	<!-- 上层控制 -->
 	<node name="driverless_node" pkg="driverless" type="driverless_node" output="screen" launch-prefix="gnome-terminal -x"> <!-- launch-prefix="gnome-terminal -x" -->
@@ -64,10 +64,10 @@
 <!--	<include file="$(find lego_loam_bor)/launch/c16/location_c16.launch"/>-->
 	
 	<!-- 导远GPS -->
-	<include file="$(find daoyuan)/launch/daoyuan.launch"/>
-	<include file="$(find rtk)/launch/rtk.launch">
-		<arg name="port" value="/dev/ttyS4"/>
-	</include>
+<!--	<include file="$(find daoyuan)/launch/daoyuan.launch"/>-->
+<!--	<include file="$(find rtk)/launch/rtk.launch">-->
+<!--		<arg name="port" value="/dev/ttyS4"/>-->
+<!--	</include>-->
 	
 	<!-- 镭神雷达 -->
 <!--	<include file="$(find lslidar_c16_decoder)/launch/lslidar_c16.launch"/>-->
