@@ -2,7 +2,7 @@
 #define JOY_STICK_H_
 
 #include <sensor_msgs/Joy.h>
-#include <ant_msgs/ControlCmd2.h>
+#include <logistics_msgs/ControlCmd2.h>
 
 enum JoyFunction
 {
@@ -39,7 +39,7 @@ public:
     bool  is_cruise = false; //是否定速巡航
 
     bool set_hand_brake = false; //手刹,默认false
-    uint8_t set_gear = ant_msgs::ControlCmd2::GEAR_NEUTRAL; //档位默认为N
+    uint8_t set_gear = logistics_msgs::ControlCmd2::GEAR_NEUTRAL; //档位默认为N
     float   set_speed = 0.0;
     float   set_steer = 0.0;
     uint8_t  set_brake = 0.0;
@@ -65,14 +65,14 @@ static bool parseJoyMsgs(const sensor_msgs::Joy& joy_msg, JoyCmd& joy_cmd)
     if (joy_msg.buttons[button_setGear] == 1)      //档位切换
     {
         //I->D->N->R->I
-        if(joy_cmd.set_gear == ant_msgs::ControlCmd2::GEAR_INITIAL)
-            joy_cmd.set_gear = ant_msgs::ControlCmd2::GEAR_DRIVE;
-        else if(joy_cmd.set_gear == ant_msgs::ControlCmd2::GEAR_DRIVE)
-            joy_cmd.set_gear = ant_msgs::ControlCmd2::GEAR_NEUTRAL;
-        else if(joy_cmd.set_gear == ant_msgs::ControlCmd2::GEAR_NEUTRAL) 
-            joy_cmd.set_gear = ant_msgs::ControlCmd2::GEAR_REVERSE;
-        else if(joy_cmd.set_gear == ant_msgs::ControlCmd2::GEAR_REVERSE)
-            joy_cmd.set_gear = ant_msgs::ControlCmd2::GEAR_INITIAL;
+        if(joy_cmd.set_gear == logistics_msgs::ControlCmd2::GEAR_INITIAL)
+            joy_cmd.set_gear = logistics_msgs::ControlCmd2::GEAR_DRIVE;
+        else if(joy_cmd.set_gear == logistics_msgs::ControlCmd2::GEAR_DRIVE)
+            joy_cmd.set_gear = logistics_msgs::ControlCmd2::GEAR_NEUTRAL;
+        else if(joy_cmd.set_gear == logistics_msgs::ControlCmd2::GEAR_NEUTRAL) 
+            joy_cmd.set_gear = logistics_msgs::ControlCmd2::GEAR_REVERSE;
+        else if(joy_cmd.set_gear == logistics_msgs::ControlCmd2::GEAR_REVERSE)
+            joy_cmd.set_gear = logistics_msgs::ControlCmd2::GEAR_INITIAL;
     }
 
     //角度档位切换
@@ -98,10 +98,10 @@ static bool parseJoyMsgs(const sensor_msgs::Joy& joy_msg, JoyCmd& joy_cmd)
     
     if(joy_cmd.validity) //manual
     {
-    	if(joy_cmd.set_gear == ant_msgs::ControlCmd2::GEAR_DRIVE ) //D档
+    	if(joy_cmd.set_gear == logistics_msgs::ControlCmd2::GEAR_DRIVE ) //D档
 		    joy_cmd.set_speed = (joy_cmd.speed_grade-1)*joy_cmd.speed_increment + 
 		                        joy_msg.axes[axes_setSpeed] * joy_cmd.speed_increment;
-		else if(joy_cmd.set_gear == ant_msgs::ControlCmd2::GEAR_REVERSE) //R档, 按照倒车速度覆盖之前所有速度值
+		else if(joy_cmd.set_gear == logistics_msgs::ControlCmd2::GEAR_REVERSE) //R档, 按照倒车速度覆盖之前所有速度值
 		    joy_cmd.set_speed = joy_msg.axes[axes_setSpeed] * 3.0; //max reverse speed 3.0km/h
 	}
 	else

@@ -315,7 +315,7 @@ void AutoDrive::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 	
 }
 
-void AutoDrive::goal_callback(const pathplaning_msgs::expected_path::ConstPtr& msg)
+void AutoDrive::goal_callback(const pathplan_msgs::expected_path::ConstPtr& msg)
 {
 	driverless_common::DoDriverlessTaskActionGoal::Ptr  actionGoal = 
 		driverless_common::DoDriverlessTaskActionGoal::Ptr(new driverless_common::DoDriverlessTaskActionGoal);

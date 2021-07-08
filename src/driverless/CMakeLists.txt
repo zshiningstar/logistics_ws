@@ -11,8 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   ##diagnostic_msgs
   gps_msgs
   jsk_recognition_msgs
-  logistics_msgs
-  ant_msgs
   nav_msgs
   geometry_msgs
   message_filters
@@ -26,7 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge 
   image_transport 
   sensor_msgs
-  pathplaning_msgs
+  pathplan_msgs
   logistics_msgs
   driverless_common
 )

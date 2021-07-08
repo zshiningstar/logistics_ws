@@ -3,15 +3,11 @@
 #include <memory>
 #include "car_following.h"
 #include "extern_control/extern_control.h"
-#include <pathplaning_msgs/expected_path.h>
+#include <pathplan_msgs/expected_path.h>
 #include <logistics_msgs/ControlCmd2.h>
 #include <logistics_msgs/RealState.h>
 #include <std_msgs/Float32.h>
 #include <nav_msgs/Odometry.h>
-#include <ant_msgs/State1.h>  //gear
-#include <ant_msgs/State3.h>  //
-#include <ant_msgs/State2.h>  //speed
-#include <ant_msgs/State4.h>  //steerAngle
 #include "auto_drive_base.h"
 #include <condition_variable>
 #include <driverless_common/SystemState.h>
@@ -46,7 +42,7 @@ private:
     void timer100ms_callback(const ros::TimerEvent&);
     void captureExernCmd_callback(const ros::TimerEvent&);
     void setSendControlCmdEnable(bool flag);
-    void goal_callback(const pathplaning_msgs::expected_path::ConstPtr& msg);
+    void goal_callback(const pathplan_msgs::expected_path::ConstPtr& msg);
     void executeDriverlessCallback(const driverless_common::DoDriverlessTaskGoalConstPtr& goal);
     bool handleNewGoal(const driverless_common::DoDriverlessTaskGoalConstPtr& goal);
    	float steerPidCtrl(float expectAngle);

@@ -12,9 +12,8 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
-//#include <ant_msgs/ControlCmd2.h>
 #include "driverless/extern_control/extern_control_base.hpp"
-#include <ant_msgs/State.h>
+#include <logistics_msgs/State.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -289,7 +288,7 @@ private:
         delete [] recvbuf;
     }
 
-    void vehicleStateCallback(const ant_msgs::State::ConstPtr &msg)
+    void vehicleStateCallback(const logistics_msgs::State::ConstPtr &msg)
     {
         steering_angle_ = msg->roadwheelAngle;
 
