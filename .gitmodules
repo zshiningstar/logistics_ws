@@ -16,3 +16,6 @@
 [submodule "src/driver/lslidar_c16"]
 	path = src/driver/lslidar_c16
 	url = https://github.com/zsx-star/lslidar_c16.git
+[submodule "src/msgs/pathplan_msgs"]
+	path = src/msgs/pathplan_msgs
+	url = https://github.com/zsx-star/pathplan_msgs.git
