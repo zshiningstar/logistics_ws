@@ -24,7 +24,8 @@ class PureTracking : public PathTrackingBase
 {
 public:
 	PureTracking() : PathTrackingBase("PureTracking"), 
-					 is_ready_(false)
+					 is_ready_(false),
+					 cycleRun_(false)
 	{}
 					 
 	~PureTracking() {}
@@ -107,7 +108,7 @@ private:
 		ros::Rate loop_rate(30);
 	
 		size_t cnt =0;
-		while(ros::ok() && is_running_ && !path_.finish())
+		while(ros::ok() && is_running_)
 		{
 			float goal_speed = expect_speed_;
 			const Pose pose = vehicle_state_.getPose(LOCK);
@@ -115,17 +116,25 @@ private:
 
 			//横向偏差,左偏为负,右偏为正
 			float lat_err = calculateDis2path(pose.x, pose.y, path_, nearest_index, &nearest_index);
+			path_.pose_index = nearest_index;// update
+			if(path_.finish()) //到达终点
+			{
+				if(!cycleRun_)
+					break;
+				//如果需要循环跟踪环形路径，更新最近点为路径起点
+				nearest_index = 0;				
+			}
+			
 			/**************PID-Kp*****************/
-			path_.pose_index = nearest_index; //更新到基类公用变量
-		
 			disThreshold_ = foreSightDis_speedCoefficient_ * vehicle_speed 
 				          + foreSightDis_latErrCoefficient_ * fabs(lat_err)
 						  + min_foresight_distance_;
 	
 			if(disThreshold_ < min_foresight_distance_)
 				disThreshold_  = min_foresight_distance_;
-			size_t target_index = nearest_index+1;//跟踪目标点索引
-	
+			size_t target_index = (nearest_index+1)%path_.size();
+			//跟踪目标点索引
+						
 			GpsPoint target_point = path_[target_index];
 			//获取当前点到目标点的距离和航向
 			std::pair<float, float> dis_yaw = getDisAndYaw(target_point, pose);
@@ -136,7 +145,7 @@ private:
 				target_point = path_[++target_index];
 				dis_yaw = getDisAndYaw(target_point, pose);
 			}
-			
+						
 			//航向偏差,左偏为正,右偏为负
 			float yaw_err = (dis_yaw.second-pose.yaw);
 			
@@ -379,6 +388,12 @@ private:
 		}
 		pub_local_path_.publish(path);
 	}
+	
+	void setCycleRun(bool flag)
+	{
+		cycleRun_ = flag;
+	}
+		
 
 private:
 	bool is_ready_;
@@ -402,6 +417,8 @@ private:
 
 	float safety_distance_;
 	float timeout_;
+	
+	bool cycleRun_;
 };
 
 
