@@ -24,7 +24,6 @@ class PureTracking : public PathTrackingBase
 {
 public:
 	PureTracking() : PathTrackingBase("PureTracking"), 
-					 expect_speed_(1.0),
 					 is_ready_(false)
 	{}
 					 
@@ -390,7 +389,6 @@ private:
 	ros::Publisher pub_local_path_;
 	
 	//state
-	float expect_speed_;
 	std::atomic<float> lat_err_;
 	std::atomic<float> yaw_err_;
 	

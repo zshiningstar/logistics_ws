@@ -39,9 +39,9 @@ public:
 		return true;
 	}
 	
-	virtual float setExpectSpeed(float speed)
+	virtual void setExpectSpeed(float speed)
 	{
-		return fabs(speed);
+		expect_speed_ = fabs(speed);
 	}
 
 	virtual bool setVehicleParams(const VehicleParams &temp_params_)
@@ -81,6 +81,7 @@ protected: //子类可以访问
 	Path path_;
 	VehicleState vehicle_state_;
 	VehicleParams vehicle_params_;
+	float expect_speed_;
 	
 	std::atomic<float> lateral_err_;//横向偏差
 	std::atomic<float> yaw_err_;    //航向偏差

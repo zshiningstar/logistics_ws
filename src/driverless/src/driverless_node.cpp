@@ -167,7 +167,7 @@ void AutoDrive::workingThread()
 void AutoDrive::doWork()
 {
 	//配置路径跟踪控制器
-	tracker_->setExpectSpeed(expect_speed_);
+	tracker_->setExpectSpeed(expect_speed_/3.6);
 	tracker_->start();//路径跟踪控制器
 	//配置跟车控制器
 
@@ -215,55 +215,6 @@ void AutoDrive::doWork()
 	switchSystemState(State_Stop);
 }
 
-/*
-void AutoDrive::doReverseWork()
-{
-	reverse_controler_.setExpectSpeed(expect_speed_);
-	reverse_controler_.start();
-	
-	ros::Rate loop_rate(1.0/decisionMakingDuration_);
-	
-	ROS_ERROR("NOT ERROR: doReverseWork-> task_running_= true");
-	task_running_ = true;
-	while(ros::ok() && system_state_ != State_Stop && reverse_controler_.isRunning())
-	{
-		//ROS_INFO("[%s] new cycle.", __NAME__);
-		reverse_cmd_ = reverse_controler_.getControlCmd();
-		
-		//ROS_INFO("[%s] speed: %.2f\t angle: %.2f", __NAME__, reverse_cmd_.speed, reverse_cmd_.roadWheelAngle);
-		
-		if(reverse_cmd_.validity)
-			decisionMaking(false);
-		
-		//如果actionlib服务器处于活跃状态，则进行状态反馈并判断是否外部请求中断
-		//如果actionlib服务器未active表明是其他方式请求的工作，比如测试例
-		if(as_->isActive())
-		{
-			driverless::DoDriverlessTaskFeedback feedback;
-			feedback.speed = reverse_cmd_.speed;
-			feedback.steer_angle = reverse_cmd_.roadWheelAngle;
-			as_->publishFeedback(feedback);
-			
-			if(as_->isPreemptRequested())  //外部请求中断
-			{
-				ROS_INFO("[%s] isPreemptRequested.", __NAME__);
-				as_->setPreempted(); //自主中断当前任务
-				break;
-			}
-		}
-
-		loop_rate.sleep();
-	}
-	reverse_controler_.stop();
-	ROS_INFO("[%s] reverse work complete.", __NAME__);
-	if(as_->isActive())
-	{
-		as_->setSucceeded(driverless::DoDriverlessTaskResult(), "drive work  completed");
-	}
-	task_running_ = false;
-	switchSystemState(State_Stop);
-}
-*/
 
 /*@brief 前进控制指令决策
  * 指令源包括: 避障控速/跟车控速/路径跟踪控转向和速度

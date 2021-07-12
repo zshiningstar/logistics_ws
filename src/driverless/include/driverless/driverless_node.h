@@ -65,10 +65,10 @@ private:
     //状态机,数字决不可改变,如需添加，向后排序
     enum State
     {
-        State_Stop    = 0,  //停止,速度置零/切空挡/拉手刹/车辆停止后跳转到空闲模式
+		State_Idle    = 0,  //空闲, 停止控制指令发送，退出自动驾驶模式
         State_Drive   = 1,  //前进,前进档
         State_Reverse = 2,  //后退,后退档
-        State_Idle    = 3,  //空闲, 停止控制指令发送，退出自动驾驶模式
+        State_Stop    = 3,  //停止,速度置零/切空挡/拉手刹/车辆停止后跳转到空闲模式
         State_SwitchToDrive  = 4,  //任务切换为前进，
                                    //①若当前为R挡，速度置零->切N挡->切D档
                                    //②若当前为D档，不进行其他操作
@@ -81,8 +81,8 @@ private:
         
     };
     
-    std::vector<std::string> StateName = {"Stop", "Drive", "Reverse",
-    									  "Idle", "SwitchToDrive", "SwitchToReverse",
+    std::vector<std::string> StateName = {"Idle", "Drive", "Reverse",
+    									  " Stop", "SwitchToDrive", "SwitchToReverse",
     									  "ForceExternControl"};
     
     void switchSystemState(int state);
