@@ -103,6 +103,7 @@ bool AutoDrive::init(ros::NodeHandle nh,ros::NodeHandle nh_private)
     as_->start();
 	/*-初始化自动驾驶请求服务器*/
 	std::cout << "初始化自动驾驶服务器！" << std::endl;
+
 		// 车辆状态检查，等待初始化
 	while(ros::ok() && !is_offline_debug_ ) //若离线调试,无需系统检查
 	{

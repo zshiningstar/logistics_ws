@@ -23,9 +23,9 @@
 class PureTracking : public PathTrackingBase
 {
 public:
-	PureTracking() : PathTrackingBase("PureTracking"), 
-					 is_ready_(false),
-					 cycleRun_(false)
+	PureTracking() : 
+		PathTrackingBase("PureTracking"), 
+		is_ready_(false)
 	{}
 					 
 	~PureTracking() {}
@@ -388,13 +388,7 @@ private:
 		}
 		pub_local_path_.publish(path);
 	}
-	
-	void setCycleRun(bool flag)
-	{
-		cycleRun_ = flag;
-	}
 		
-
 private:
 	bool is_ready_;
 	
@@ -417,8 +411,6 @@ private:
 
 	float safety_distance_;
 	float timeout_;
-	
-	bool cycleRun_;
 };
 
 

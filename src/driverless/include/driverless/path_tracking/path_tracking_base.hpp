@@ -20,6 +20,7 @@ public:
 		is_initialed_ = false;
 		is_running_ = false;
 		name_ = name;
+		cycleRun_ = false;
 	}
 	virtual ~PathTrackingBase()
 	{
@@ -63,6 +64,21 @@ public:
 //		trackingError.second = g_yaw_err_;
 		return std::make_pair<float,float>(lateral_err_, yaw_err_);
 	}
+
+	void setCycleRun(bool flag)
+	{
+		cycleRun_ = flag;
+	}
+
+	const Path& getPath()
+	{
+		return path_;
+	}
+
+	const VehicleState& getVehicleState()
+	{
+		return vehicle_state_;
+	}
 	
     virtual bool init(ros::NodeHandle nh,ros::NodeHandle nh_private) = 0;//纯虚函数
 	virtual bool start() {is_running_ = true;}
@@ -87,6 +103,7 @@ protected: //子类可以访问
 	std::atomic<float> yaw_err_;    //航向偏差
 	
     std::pair <float, float> trackingError;
+	bool cycleRun_;
 };
 
 

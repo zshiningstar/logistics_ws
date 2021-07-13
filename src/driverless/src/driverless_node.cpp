@@ -50,14 +50,16 @@ bool AutoDrive::handleNewGoal(const driverless_common::DoDriverlessTaskGoalConst
 			      << "goal->task: " << int(goal->task)  << "\t"
 				  << "goal->file: " << goal->roadnet_file << "\t" 
 				  << "expect_speed: " << goal->expect_speed << "\t"
-				  << "path_resolution: " << goal->path_resolution << "\t"     
+				  << "path_resolution: " << goal->path_resolution << "\t" 
+				  << "cycle_run: " << goal->cycle_run << "\t" 
 				  << std::endl;
 	switchSystemState(State_Stop); //新请求，无论如何先停止, 暂未解决新任务文件覆盖旧文件导致的自动驾驶异常问题，
                                    //因此只能停车后开始新任务
                                    //实则，若新任务与当前任务驾驶方向一致，只需合理的切换路径文件即可！
                                    //已经预留了切换接口，尚未解决运行中清空历史文件带来的隐患
-
-	ROS_ERROR("[%s] NOT ERROR. new task ready, vehicle has speed zero now.", __NAME__);
+	
+	publishDiagnosticMsg(diagnostic_msgs::DiagnosticStatus::OK,"New task ready, vehicle has speed zero now.");
+	ROS_INFO("[%s] new task ready, vehicle has speed zero now.", __NAME__);
 	this->expect_speed_ = goal->expect_speed;
     //给定目标点位置，调用路径规划
     if(goal->type == goal->POSE_TYPE) 
@@ -88,7 +90,20 @@ bool AutoDrive::handleNewGoal(const driverless_common::DoDriverlessTaskGoalConst
             as_->setSucceeded(res, "Aborting on drive task, because load drive path file failed! ");
             return false;
         }
-        tracker_->setPath(global_path_);
+		tracker_->setPath(global_path_);
+
+		if(goal->cycle_run)
+		{
+			if(!tracker_->getPath().recyclable(1.0))
+			{
+				ROS_ERROR("[%s] Target path not recyclable!", __NAME__);
+				driverless_common::DoDriverlessTaskResult res;
+				res.success = false;
+				as_->setSucceeded(res, "Aborting on drive task, Target path not recyclable! ");
+				return false;
+			}
+			tracker_->setCycleRun(true);
+		}
     }
     else
     {
@@ -96,22 +111,44 @@ bool AutoDrive::handleNewGoal(const driverless_common::DoDriverlessTaskGoalConst
 		as_->setAborted(driverless_common::DoDriverlessTaskResult(), "Aborting on unknown goal type! ");
         return false;
     }
-    
-    if(goal->task == goal->DRIVE_TASK)
-    {
-	    //切换系统状态为: 切换到前进
-	    switchSystemState(State_SwitchToDrive);
-	}
-	else if(goal->task == goal->REVERSE_TASK)
+
+	Path p = tracker_->getPath();
+	float stateDrive = (vehicle_state_.getPose(LOCK).yaw - p[p.pose_index].yaw);
+	std::cout << "车身航向 ：" << vehicle_state_.getPose(LOCK).yaw << "目标点航向： " << p[p.pose_index].yaw << std::endl;
+	std::cout << "车身当前航向与目标最近点航向夹角为： " << stateDrive << std::endl;
+
+	if(fabs(stateDrive) <= M_PI / 3.0 )
 	{
+		goal->task == goal->DRIVE_TASK;
+		switchSystemState(State_SwitchToDrive);
+	}
+	else if(fabs(stateDrive) >= 2 * M_PI / 3.0)
+	{
+		goal->task == goal->REVERSE_TASK;
 		switchSystemState(State_SwitchToReverse);
 	}
 	else
 	{
-		ROS_ERROR("[%s] Unknown task type!", __NAME__);
-		as_->setAborted(driverless_common::DoDriverlessTaskResult(), "Aborting on unknown task! ");
+		ROS_ERROR("[%s] the drive driection decide failed !",__NAME__);
+		as_->setAborted(driverless_common::DoDriverlessTaskResult(), "Aborting on unknown driection! ");
 		return false;
 	}
+    
+//    if(goal->task == goal->DRIVE_TASK)
+//   {
+//	    //切换系统状态为: 切换到前进
+//	    switchSystemState(State_SwitchToDrive);
+//	}
+//	else if(goal->task == goal->REVERSE_TASK)
+//	{
+//		switchSystemState(State_SwitchToReverse);
+//	}
+//	else
+//	{
+//		ROS_ERROR("[%s] Unknown task type!", __NAME__);
+//		as_->setAborted(driverless_common::DoDriverlessTaskResult(), "Aborting on unknown task! ");
+//		return false;
+//	}
 
     std::unique_lock<std::mutex> lck(work_cv_mutex_);
     has_new_task_ = true;
@@ -139,8 +176,8 @@ void AutoDrive::workingThread()
 		
 		doWork();
 
-		if(state!=State_Drive && state!=State_Reverse)
-			ROS_ERROR("[%s] Unknown task type in current state: %d.", __NAME__, state);
+//		if(state!=State_Drive && state!=State_Reverse)
+//			ROS_ERROR("[%s] Unknown task type in current state: %d.", __NAME__, state);
 
 		std::unique_lock<std::mutex> lck(listen_cv_mutex_);
 		request_listen_ = true;
@@ -280,13 +317,13 @@ void AutoDrive::doWork()
 		expectSpeed = controlCmd2_.set_speed;
 	controlCmd2_.set_speed = expectSpeed;
 	lastCtrlSpeed = controlCmd2_.set_speed;
-
+	
 	if(system_state_ == State_Drive) 
 		controlCmd2_.set_speed = fabs(controlCmd2_.set_speed);
 	else if(system_state_ == State_Reverse)
 	{
 		controlCmd2_.set_speed = -fabs(controlCmd2_.set_speed);
-//		controlCmd2_.set_roadWheelAngle = -controlCmd2_.set_roadWheelAngle;
+		controlCmd2_.set_roadWheelAngle = -controlCmd2_.set_roadWheelAngle;
 	}
 
 	//std::cout << controlCmd2_.set_speed << "\t" << expectSpeed << "\t" << deltaT << "\t" << expectAccel << std::endl;

@@ -223,7 +223,7 @@ void Uppercontrol::parseFromStmVehicleState(const unsigned char* buffer)
 	
 	m_state.left_wheel_speed        = ((buffer[4]* 256 + buffer[5]) - 30000);
 	m_state.right_wheel_speed       = ((buffer[6]* 256 + buffer[7] ) - 30000);
-	m_state.real_angle              = ((buffer[8]* 256 + buffer[9] ) - 30000)/100.0;
+	m_state.real_angle              = ((buffer[8]* 256 + buffer[9] ) - 30000)/10.0;
 	
 	m_state.real_touque             = buffer[10] *256 + buffer[11] - 30000;
 	m_state.real_brake              = buffer[12];
