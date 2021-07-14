@@ -219,7 +219,7 @@ void AutoDrive::captureExernCmd_callback(const ros::TimerEvent&)
 
 void AutoDrive::switchSystemState(int state)
 {
-	ROS_ERROR("[%s] NOT ERROR switchSystemState: %s", __NAME__, StateName[state].c_str());//
+	ROS_INFO("[%s] switchSystemState: %s", __NAME__, StateName[state].c_str());//
 	if(system_state_ == state) return; //防止重复操作
 	
 	last_system_state_ = system_state_;
@@ -264,7 +264,7 @@ void AutoDrive::switchSystemState(int state)
 		cmd2_mutex_.unlock();
 		setSendControlCmdEnable(true);
 		waitSpeedZero(); //等待汽车速度为0
-        ROS_ERROR("[%s] NOT ERROR. set_gear: GEAR_NEUTRAL", __NAME__);
+        ROS_INFO("[%s] set_gear: GEAR_NEUTRAL", __NAME__);
 		//等待正在执行的任务彻底退出后，将系统置为空闲
 		while(task_running_) 
 		{
@@ -302,6 +302,9 @@ void AutoDrive::switchSystemState(int state)
 }
 void AutoDrive::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
+	if(location_source_ != msg->child_frame_id)
+		location_source_ = msg->child_frame_id;
+
 	bool odom_valid = msg->pose.covariance[4] >= 9;
 	
 	vehicle_state_.setPoseValid(odom_valid);
@@ -422,6 +425,21 @@ bool AutoDrive::loadDriveTaskFile(const std::string& file, bool flip)
 		publishDiagnosticMsg(diagnostic_msgs::DiagnosticStatus::ERROR,"Load path file failed!");
 		return false;
 	}
+
+	//+ 修正路径点，删除与实际航向不符的路径点
+	Path rectified_path;
+	for(int i=0; i<global_path_.size()-1; ++i)
+	{
+		float dx = global_path_[i+1].x - global_path_[i].x;
+		float dy = global_path_[i+1].y - global_path_[i].y;
+		float calYaw = atan2(dy,dx); //前后点差分求航向
+		if(fabs(calYaw - global_path_[i].yaw) < 20.0/180*M_PI) //容许航向差
+			rectified_path.points.push_back(global_path_[i]);
+	}
+	std::cout << "path points size. raw: " << global_path_.size() 
+			  << "  rectified: " << rectified_path.size() << std::endl;
+	global_path_.points = rectified_path.points;
+	global_path_.final_index = global_path_.size()-1;
 	
 	if(flip)
 	{
@@ -498,6 +516,7 @@ void AutoDrive::publishDriverlessState()
 		const Pose pose = vehicle_state_.getPose(LOCK);
 		const float speed = vehicle_state_.getSpeed(LOCK);
 		driverless_state_.header.stamp = ros::Time::now();
+		driverless_state_.location_source = location_source_;
 		driverless_state_.position_x = pose.x;
 		driverless_state_.position_y = pose.y;
 		driverless_state_.yaw = pose.yaw;

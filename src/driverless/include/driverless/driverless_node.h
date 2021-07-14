@@ -156,5 +156,6 @@ private:
     
 	VehicleState vehicle_state_;   //汽车状态
     SharedMutex  vehicle_state_shared_mutex_; // 汽车状态读写锁
+    std::string location_source_;  //定位源 GPS？ SLAM？
 };
 

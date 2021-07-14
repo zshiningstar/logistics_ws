@@ -6,7 +6,7 @@
 #include <ros/ros.h>
 #include <driverless_common/structs.h>
 
-#include "utils.hpp"
+#include "driverless_common/utils.hpp"
 #include <utility>
 #include <diagnostic_msgs/DiagnosticStatus.h>
 

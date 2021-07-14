@@ -27,7 +27,7 @@ void AutoDrive::executeDriverlessCallback(const driverless_common::DoDriverlessT
 		if(as_->isNewGoalAvailable())
 		{
 			//if we're active and a new goal is available, we'll accept it, but we won't shut anything down
-			ROS_ERROR("[%s] NOT ERROR. The current work was interrupted by new request!", __NAME__);
+			ROS_INFO("[%s] The current work was interrupted by new request!", __NAME__);
 			driverless_common::DoDriverlessTaskGoalConstPtr new_goal = as_->acceptNewGoal();
 
 			if(!handleNewGoal(new_goal)) return;
@@ -112,19 +112,24 @@ bool AutoDrive::handleNewGoal(const driverless_common::DoDriverlessTaskGoalConst
         return false;
     }
 
-	Path p = tracker_->getPath();
-	float stateDrive = (vehicle_state_.getPose(LOCK).yaw - p[p.pose_index].yaw);
-	std::cout << "车身航向 ：" << vehicle_state_.getPose(LOCK).yaw << "目标点航向： " << p[p.pose_index].yaw << std::endl;
+	const Path& path = tracker_->getPath();
+	const Pose pose = vehicle_state_.getPose(LOCK);
+	const Pose nearestPose = path.nearest(pose);
+
+	float poseYaw = normalizeRadAngle(pose.yaw);
+	float pathYaw = normalizeRadAngle(nearestPose.yaw);
+	
+	float stateDrive = (poseYaw - pathYaw);
+	std::cout << "车身航向 ：" << poseYaw  <<"  " << poseYaw*180.0/M_PI << std::endl;
+	std::cout << " 目标点航向： " << pathYaw  <<"  " << pathYaw*180.0/M_PI << std::endl;
 	std::cout << "车身当前航向与目标最近点航向夹角为： " << stateDrive << std::endl;
 
 	if(fabs(stateDrive) <= M_PI / 3.0 )
 	{
-		goal->task == goal->DRIVE_TASK;
 		switchSystemState(State_SwitchToDrive);
 	}
 	else if(fabs(stateDrive) >= 2 * M_PI / 3.0)
 	{
-		goal->task == goal->REVERSE_TASK;
 		switchSystemState(State_SwitchToReverse);
 	}
 	else
@@ -210,7 +215,7 @@ void AutoDrive::doWork()
 
 	ros::Rate loop_rate(1.0/decisionMakingDuration_);
 	
-	ROS_ERROR("NOT ERROR: doWork-> task_running_= true");
+	ROS_INFO("doWork-> task_running_= true");
 	task_running_ = true;
 
 	while(ros::ok() && system_state_ != State_Stop && tracker_->isRunning())
@@ -262,16 +267,8 @@ void AutoDrive::doWork()
  logistics_msgs::ControlCmd2 AutoDrive::decisionMaking()
  {
  	std::lock_guard<std::mutex> lock2(cmd2_mutex_);
- 	/*if(isDrive)  //drive
- 	{*/
-	controlCmd2_.set_roadWheelAngle = tracker_cmd_.roadWheelAngle;//前轮转角
+	controlCmd2_.set_roadWheelAngle = tracker_cmd_.roadWheelAngle;;//前轮转角
 	controlCmd2_.set_speed = fabs(tracker_cmd_.speed); //优先使用跟踪器速度指令
- 	/*}
- 	else //reverse
- 	{
- 		controlCmd2_.set_speed = fabs(reverse_cmd_.speed);
-		controlCmd2_.set_roadWheelAngle = reverse_cmd_.roadWheelAngle;
- 	}*/
  	
 	//若当前状态为强制使用外部控制指令，则忽悠其他指令源
 	if(system_state_ == State_ForceExternControl)
@@ -300,13 +297,24 @@ void AutoDrive::doWork()
 	float minAccel = -2.0;
 	float expectAccel = 0.0; //m/s2
 
-	int accelSign = sign(avoid_min_obj_distance_- safety_distance_ - speed_now*speed_now/(2*maxAccel));
+	// int vehicleSpeedSign = 0;
+	// if(system_state_ == State_Drive)
+	// 	vehicleSpeedSign = 1;
+	// else if(system_state_ == State_Reverse)
+	// 	vehicleSpeedSign = -1;
+
+	float avoid_obj_distance = 1000;
+	if(system_state_ == State_Drive)
+		avoid_obj_distance = avoid_min_obj_distance_;
+	else if(system_state_ == State_Reverse)
+		;//avoid_obj_distance = ?
 	
-	if(accelSign > 0)
+	int accelSign = sign(avoid_obj_distance - safety_distance_ - speed_now*speed_now/(2*maxAccel));
+	if(accelSign  > 0  )
 		expectAccel = maxAccel;
-	else if(accelSign < 0)
+	else if(accelSign  < 0)
 		expectAccel = minAccel;
-	
+
 	float expectSpeed = lastCtrlSpeed + expectAccel*deltaT;
 //	std::cout << expectSpeed << "  " << lastCtrlSpeed << "  " << expectAccel << std::endl;
 
@@ -323,7 +331,6 @@ void AutoDrive::doWork()
 	else if(system_state_ == State_Reverse)
 	{
 		controlCmd2_.set_speed = -fabs(controlCmd2_.set_speed);
-		controlCmd2_.set_roadWheelAngle = -controlCmd2_.set_roadWheelAngle;
 	}
 
 	//std::cout << controlCmd2_.set_speed << "\t" << expectSpeed << "\t" << deltaT << "\t" << expectAccel << std::endl;
