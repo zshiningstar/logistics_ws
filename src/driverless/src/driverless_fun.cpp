@@ -427,19 +427,19 @@ bool AutoDrive::loadDriveTaskFile(const std::string& file, bool flip)
 	}
 
 	//+ 修正路径点，删除与实际航向不符的路径点
-	Path rectified_path;
-	for(int i=0; i<global_path_.size()-1; ++i)
-	{
-		float dx = global_path_[i+1].x - global_path_[i].x;
-		float dy = global_path_[i+1].y - global_path_[i].y;
-		float calYaw = atan2(dy,dx); //前后点差分求航向
-		if(fabs(calYaw - global_path_[i].yaw) < 20.0/180*M_PI) //容许航向差
-			rectified_path.points.push_back(global_path_[i]);
-	}
-	std::cout << "path points size. raw: " << global_path_.size() 
-			  << "  rectified: " << rectified_path.size() << std::endl;
-	global_path_.points = rectified_path.points;
-	global_path_.final_index = global_path_.size()-1;
+//	Path rectified_path;
+//	for(int i=0; i<global_path_.size()-1; ++i)
+//	{
+//		float dx = global_path_[i+1].x - global_path_[i].x;
+//		float dy = global_path_[i+1].y - global_path_[i].y;
+//		float calYaw = atan2(dy,dx); //前后点差分求航向
+//		if(fabs(calYaw - global_path_[i].yaw) < 20.0/180*M_PI) //容许航向差
+//			rectified_path.points.push_back(global_path_[i]);
+//	}
+//	std::cout << "path points size. raw: " << global_path_.size() 
+//			  << "  rectified: " << rectified_path.size() << std::endl;
+//	global_path_.points = rectified_path.points;
+//	global_path_.final_index = global_path_.size()-1;
 	
 	if(flip)
 	{
@@ -457,7 +457,8 @@ bool AutoDrive::loadDriveTaskFile(const std::string& file, bool flip)
 	}
 
 	//载入路径附加信息
-	std::string path_infos_file = file.substr(0,file.find_last_of(".")) + "_info.xml";
+//	ROS_INFO("[%s]",file);
+	std::string path_infos_file = file.substr(0,file.find_last_of("/")) + "/extend_info.xml";
 	if(!loadPathAppendInfos(path_infos_file, global_path_, __NAME__))
 	{
 		ROS_ERROR("[%s] Load path infomation failed!",__NAME__);

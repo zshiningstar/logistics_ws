@@ -22,3 +22,6 @@
 [submodule "src/driver/lidar_detect"]
 	path = src/driver/lidar_detect
 	url = https://github.com.cnpmjs.org/zsx-star/lidar_detect.git
+[submodule "src/av_cloudctrl_client"]
+	path = src/av_cloudctrl_client
+	url = https://github.com/CastielLiu/av_cloudctrl_client.git
