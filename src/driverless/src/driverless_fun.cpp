@@ -49,7 +49,7 @@ bool AutoDrive::init(ros::NodeHandle nh,ros::NodeHandle nh_private)
 	nh_private_.param<bool>("use_extern_controller", use_extern_controller_, false);
 	nh_private_.param<bool>("use_car_follower", use_car_follower_, false);
 	std::string odom_topic = nh_private_.param<std::string>("odom_topic","/ll2utm_odom");
-	std::string tracking_info_topic = nh_private.param<std::string>("tracking_info_topic","/driverless/state");
+	std::string tracking_info_topic = nh_private.param<std::string>("tracking_info_topic","/driverless/system_state");
 	pub_driverless_state_ = nh.advertise<driverless_common::SystemState>(tracking_info_topic,1);
 	
 	initDiagnosticPublisher(nh_,__NAME__);
@@ -315,7 +315,12 @@ void AutoDrive::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 	pose.x =  msg->pose.pose.position.x;
 	pose.y =  msg->pose.pose.position.y;
 	pose.yaw = msg->pose.covariance[0];
+	pose.latitude = msg->pose.covariance[2];
+	pose.longitude = msg->pose.covariance[2];
+	
 	vehicle_state_.setPose(pose);
+	
+//	std::cout << "pose: " << pose.x << "\t" << pose.y << "\t" << pose.yaw << std::endl;
 	
 }
 
@@ -520,6 +525,9 @@ void AutoDrive::publishDriverlessState()
 		driverless_state_.location_source = location_source_;
 		driverless_state_.position_x = pose.x;
 		driverless_state_.position_y = pose.y;
+		driverless_state_.longitude = pose.longitude;
+		driverless_state_.latitude = pose.latitude;
+		
 		driverless_state_.yaw = pose.yaw;
 		driverless_state_.vehicle_speed =  speed;
 		driverless_state_.roadwheel_angle = vehicle_state_.getSteerAngle(LOCK);

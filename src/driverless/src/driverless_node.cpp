@@ -119,7 +119,7 @@ bool AutoDrive::handleNewGoal(const driverless_common::DoDriverlessTaskGoalConst
 	float poseYaw = normalizeRadAngle(pose.yaw);
 	float pathYaw = normalizeRadAngle(nearestPose.yaw);
 	
-	float stateDrive = (poseYaw - pathYaw);
+	float stateDrive = normalizeRadAngle(poseYaw - pathYaw);
 	std::cout << "车身航向 ：" << poseYaw  <<"  " << poseYaw*180.0/M_PI << std::endl;
 	std::cout << " 目标点航向： " << pathYaw  <<"  " << pathYaw*180.0/M_PI << std::endl;
 	std::cout << "车身当前航向与目标最近点航向夹角为： " << stateDrive << std::endl;
@@ -129,7 +129,8 @@ bool AutoDrive::handleNewGoal(const driverless_common::DoDriverlessTaskGoalConst
 		switchSystemState(State_SwitchToDrive);
 	}
 	else if(fabs(stateDrive) >= 2 * M_PI / 3.0)
-	{
+	{	
+		
 		switchSystemState(State_SwitchToReverse);
 	}
 	else
