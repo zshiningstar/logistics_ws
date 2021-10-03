@@ -71,18 +71,14 @@ bool Uppercontrol::init()
 {
 	ros::NodeHandle nh;
 	ros::NodeHandle nh_private("~");
-	odom_pub = nh.advertise<nav_msgs::Odometry>("/wheel_odom", 50);
-	m_pub_state = nh.advertise<logistics_msgs::RealState>(nh_private.param<std::string>("car_state","/car_state"),10);
+	odom_pub_ = nh.advertise<nav_msgs::Odometry>("/wheel_odom", 50);
+	m_pub_state_ = nh.advertise<driverless_common::VehicleState>(nh_private.param<std::string>("car_state","/car_state"),10);
 	
-	std::string car_goal = nh_private.param<std::string>("car_goal","/car_goal");
 	std::string pid_params = nh_private.param<std::string>("pid_params","/pid_params");
 	
-	std::string controlCmd2_goal = nh_private.param<std::string>("controlCmd2","/controlCmd2");
-	
-	m_sub_controlCmd2 = nh.subscribe(controlCmd2_goal ,1,&Uppercontrol::Cmd2_callback, this);
-	
-	m_sub_goal = nh.subscribe(car_goal ,1,&Uppercontrol::GoalState_callback, this);
-	m_sub_pid_params = nh.subscribe(pid_params,1,&Uppercontrol::Pid_callback, this);
+	std::string m_controlCmd2_goal = nh_private.param<std::string>("controlCmd2","/controlCmd2");
+	m_sub_controlCmd2_ = nh.subscribe(m_controlCmd2_goal ,1,&Uppercontrol::D_Cmd2_callback, this);
+	m_sub_pid_params_ = nh.subscribe(pid_params,1,&Uppercontrol::Pid_callback, this);
 	
 	std::string port_name = nh_private.param<std::string>("port_name","/dev/pts/23");
 	int baudrate = nh_private.param<int>("baudrate",115200);
@@ -218,25 +214,23 @@ uint8_t Uppercontrol::sumCheck(const uint8_t* buf, int len)
 
 void Uppercontrol::parseFromStmVehicleState(const unsigned char* buffer)
 {	
-	m_state.header.stamp = ros::Time::now();
-	m_state.header.frame_id = "car_state";
+	real_speed_left        = ((buffer[4]* 256 + buffer[5]) - 30000);
+	real_speed_right       = ((buffer[6]* 256 + buffer[7] ) - 30000);
+	real_angle             = ((buffer[8]* 256 + buffer[9] ) - 30000)/10.0;
 	
-	m_state.left_wheel_speed        = ((buffer[4]* 256 + buffer[5]) - 30000);
-	m_state.right_wheel_speed       = ((buffer[6]* 256 + buffer[7] ) - 30000);
-	m_state.real_angle              = ((buffer[8]* 256 + buffer[9] ) - 30000)/10.0;
+	real_touque            = buffer[10] *256 + buffer[11] - 30000;
+	real_brake             = buffer[12];
+	real_speed             = generate_real_speed(real_speed_left,real_speed_right);
 	
-	m_state.real_touque             = buffer[10] *256 + buffer[11] - 30000;
-	m_state.real_brake              = buffer[12];
-	m_state.real_speed              = generate_real_speed(m_state.left_wheel_speed,m_state.right_wheel_speed);
+//	m_state_.header.stamp = ros::Time::now();
+//	m_state_.header.frame_id = "car_state";
+	m_state_.speed = real_speed;
+	m_state_.roadwheel_angle = real_angle;
+	m_state_.driverless = true;
+	m_state_.manualCtrlDetected = false;
+	m_pub_state_.publish(m_state_);
 	
-	m_pub_state.publish(m_state);
-	
-	float left_speed            		    = m_state.left_wheel_speed;
-	float right_speed             		= m_state.right_wheel_speed;
-	real_speed                      = m_state.real_speed;
-	real_angle                      = m_state.real_angle;
-	real_touque                     = m_state.real_touque;
-	
+	/*
 	if(prase_flag_)
 	{
 		double x = 0.0;
@@ -245,7 +239,7 @@ void Uppercontrol::parseFromStmVehicleState(const unsigned char* buffer)
 		last_time = ros::Time::now();
 		prase_flag_ = false;
 	}
-	/*
+	
 		double dt = (current_time - last_time).toSec();
 		vx = real_speed; // forward
 		vy = 0;
@@ -293,22 +287,23 @@ void Uppercontrol::parseFromStmVehicleState(const unsigned char* buffer)
 		odom.twist.twist.angular.z = vth;
 
 		//publish the message
-		odom_pub.publish(odom);
+		odom_pub_.publish(odom);
 		ROS_DEBUG_STREAM("accumulation_x: " << x << "; accumulation_y: " << y <<"; accumulation_th: " << vth);
 		last_time = current_time;
 		*/
 }
-void Uppercontrol::Cmd2_callback(const logistics_msgs::ControlCmd2::ConstPtr& msg)
+
+void Uppercontrol::D_Cmd2_callback(const driverless_common::VehicleCtrlCmd::ConstPtr& msg)
 {	
 	static uint8_t pkgId = 0x01;
 	const uint8_t dataLen = 6;
 	static uint8_t buf[11] = {0x66, 0xcc, pkgId, dataLen };
 
-	uint16_t u16_speed = msg->set_speed * 100.0 + 30000;
+	uint16_t u16_speed = msg->speed * 100.0 + 30000;
 	buf[5]  = u16_speed >> 8;  
 	buf[6]  = u16_speed;  
 	
-	float float_angle = msg->set_roadWheelAngle;
+	float float_angle = msg->roadwheel_angle;
 	if(float_angle > MAX_STEER_ANGLE)
 		float_angle = MAX_STEER_ANGLE;
 	else if(float_angle < -MAX_STEER_ANGLE)
@@ -317,28 +312,6 @@ void Uppercontrol::Cmd2_callback(const logistics_msgs::ControlCmd2::ConstPtr& ms
 	uint16_t u16_angle = float_angle * 100.0 + 30000;
 	buf[7]  = u16_angle >> 8;
 	buf[8]  = u16_angle;
-	
-	uint8_t checkVal = sumCheck(buf+2, dataLen+2);
-	
-	//std::cout << (buf[2]) << "\t" << dataLen+2 << "\t" << int(checkVal) << std::endl;
-	buf[dataLen+4] = checkVal;
-	//print(buf, dataLen+5);
-	m_serial_port-> write(buf,dataLen+5);
-}
-
-void Uppercontrol::GoalState_callback(const logistics_msgs::GoalState::ConstPtr& msg)
-{	
-	static uint8_t pkgId = 0x01;
-	const uint8_t dataLen = 6;
-	static uint8_t buf[11] = {0x66, 0xcc, pkgId, dataLen };
-
-	uint16_t sum = msg->goal_speed * 100.0 + 30000;
-	buf[5]  = sum >> 8;  
-	buf[6]  = sum;  
-	
-	uint16_t sun = msg->goal_angle * 100.0 + 30000;
-	buf[7]  = sun >> 8;
-	buf[8]  = sun;
 	
 	uint8_t checkVal = sumCheck(buf+2, dataLen+2);
 	

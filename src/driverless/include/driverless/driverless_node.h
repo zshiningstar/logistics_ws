@@ -16,6 +16,8 @@
 #include <driverless_common/DoDriverlessTaskAction.h>   // Note: "Action" is appended
 #include "driverless/path_tracking/pure_tracking/pure_tracking.hpp"
 
+#include <driverless_common/VehicleState.h>
+#include <driverless_common/VehicleCtrlCmd.h>
 
 class AutoDrive : public AutoDriveBase
 {
@@ -34,7 +36,7 @@ private:
     bool setDriveTaskPathPoints(const driverless_common::DoDriverlessTaskGoalConstPtr& goal);
 	void publishPathTrackingState();
     bool isGpsPointValid(const GpsPoint& point);
-    void vehicleSpeed_callback(const logistics_msgs::RealState::ConstPtr& msg);
+    void vehicleSpeed_callback(const driverless_common::VehicleState::ConstPtr& msg);
 
     void is_object_callback(const std_msgs::Float32::ConstPtr& msg);
     void odom_callback(const nav_msgs::Odometry::ConstPtr& msg);
@@ -47,7 +49,7 @@ private:
     bool handleNewGoal(const driverless_common::DoDriverlessTaskGoalConstPtr& goal);
    	float steerPidCtrl(float expectAngle);
 
-    logistics_msgs::ControlCmd2 decisionMaking();
+    driverless_common::VehicleCtrlCmd decisionMaking();
     
 
     bool isReverseGear();
@@ -129,7 +131,7 @@ private:
     ros::Subscriber  sub_vehicle_speed_;
     
     std::mutex cmd2_mutex_;
-	logistics_msgs::ControlCmd2 controlCmd2_;
+	driverless_common::VehicleCtrlCmd controlCmd2_;
 
     DoDriverlessTaskServer* as_;
     

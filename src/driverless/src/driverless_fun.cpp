@@ -18,8 +18,8 @@ AutoDrive::AutoDrive():
 	avoid_min_obj_distance_(2000),
 	decisionMakingDuration_(0.05)
 {
-	controlCmd2_.set_speed = 0.0;
-	controlCmd2_.set_roadWheelAngle = 0.0;
+	controlCmd2_.speed = 0.0;
+	controlCmd2_.roadwheel_angle = 0.0;
 }
 
 AutoDrive::~AutoDrive()
@@ -229,8 +229,8 @@ void AutoDrive::switchSystemState(int state)
 	if(state == State_Drive) 
 	{
 		cmd2_mutex_.lock();
-		controlCmd2_.set_speed = 0.0;
-		controlCmd2_.set_roadWheelAngle = 0.0;
+		controlCmd2_.speed = 0.0;
+		controlCmd2_.roadwheel_angle = 0.0;
 		cmd2_mutex_.unlock();
         //启动控制指令发送
 		setSendControlCmdEnable(true);
@@ -239,8 +239,8 @@ void AutoDrive::switchSystemState(int state)
 	else if(state == State_Reverse) 
 	{
 		cmd2_mutex_.lock();
-		controlCmd2_.set_speed = 0.0;
-		controlCmd2_.set_roadWheelAngle = 0.0;
+		controlCmd2_.speed = 0.0;
+		controlCmd2_.roadwheel_angle = 0.0;
 		cmd2_mutex_.unlock();
         //启动控制指令发送
 		setSendControlCmdEnable(true);
@@ -249,8 +249,8 @@ void AutoDrive::switchSystemState(int state)
 	else if(state == State_Idle)  //空闲
 	{
 		cmd2_mutex_.lock();
-		controlCmd2_.set_speed = 0.0;
-		controlCmd2_.set_roadWheelAngle = 0.0;
+		controlCmd2_.speed = 0.0;
+		controlCmd2_.roadwheel_angle = 0.0;
 		cmd2_mutex_.unlock();
 		setSendControlCmdEnable(true);
 	}
@@ -259,8 +259,8 @@ void AutoDrive::switchSystemState(int state)
 	else if(state == State_Stop)  
 	{
 		cmd2_mutex_.lock();
-		controlCmd2_.set_speed = 0.0; 
-		controlCmd2_.set_roadWheelAngle = 0.0;
+		controlCmd2_.speed = 0.0; 
+		controlCmd2_.roadwheel_angle = 0.0;
 		cmd2_mutex_.unlock();
 		setSendControlCmdEnable(true);
 		waitSpeedZero(); //等待汽车速度为0
@@ -278,8 +278,8 @@ void AutoDrive::switchSystemState(int state)
     {
     	setSendControlCmdEnable(true);  //启动控制指令发送
 		cmd2_mutex_.lock();
-		controlCmd2_.set_speed = 0.0;
-		controlCmd2_.set_brake = 0.0;
+		controlCmd2_.speed = 0.0;
+		controlCmd2_.brake = 0.0;
 		cmd2_mutex_.unlock();
         waitSpeedZero();                //等待速度为0
         switchSystemState(State_Drive); //递归调用，状态置为前进
@@ -289,8 +289,8 @@ void AutoDrive::switchSystemState(int state)
     {
     	setSendControlCmdEnable(true);  //启动控制指令发送
 		cmd2_mutex_.lock();
-		controlCmd2_.set_speed = 0.0;
-		controlCmd2_.set_brake = 0.0;
+		controlCmd2_.speed = 0.0;
+		controlCmd2_.brake = 0.0;
 		cmd2_mutex_.unlock();
         waitSpeedZero();                //等待速度为0
         switchSystemState(State_Reverse); //递归调用，状态置为倒车
@@ -315,8 +315,8 @@ void AutoDrive::odom_callback(const nav_msgs::Odometry::ConstPtr& msg)
 	pose.x =  msg->pose.pose.position.x;
 	pose.y =  msg->pose.pose.position.y;
 	pose.yaw = msg->pose.covariance[0];
-	pose.latitude = msg->pose.covariance[2];
-	pose.longitude = msg->pose.covariance[2];
+	//pose.latitude = msg->pose.covariance[2];
+	//pose.longitude = msg->pose.covariance[2];
 	
 	vehicle_state_.setPose(pose);
 	
@@ -344,15 +344,15 @@ void AutoDrive::goal_callback(const pathplan_msgs::expected_path::ConstPtr& msg)
 	ROS_INFO("[%s] Receive expect path from extern path planner.", __NAME__);
 }
 
-void AutoDrive::vehicleSpeed_callback(const logistics_msgs::RealState::ConstPtr& msg)
+void AutoDrive::vehicleSpeed_callback(const driverless_common::VehicleState::ConstPtr& msg)
 {
-	if(msg->real_speed >10.0)
+	if(msg->speed >10.0)
 	{
 		vehicle_state_.speed_validity = false;
 		return;
 	}
-	float _vehicle_speed = msg->real_speed * 3.6;  //km/h->m/s
-	vehicle_state_.setSteerAngle(msg->real_angle);
+	float _vehicle_speed = msg->speed * 3.6;  //km/h->m/s
+	vehicle_state_.setSteerAngle(msg->roadwheel_angle);
 	vehicle_state_.setSpeed(_vehicle_speed); //  km/h
 	vehicle_state_.speed_validity = true;
 	vehicle_state_.steer_validity = true;
@@ -525,8 +525,8 @@ void AutoDrive::publishDriverlessState()
 		driverless_state_.location_source = location_source_;
 		driverless_state_.position_x = pose.x;
 		driverless_state_.position_y = pose.y;
-		driverless_state_.longitude = pose.longitude;
-		driverless_state_.latitude = pose.latitude;
+		//driverless_state_.longitude = pose.longitude;
+		//driverless_state_.latitude = pose.latitude;
 		
 		driverless_state_.yaw = pose.yaw;
 		driverless_state_.vehicle_speed =  speed;
@@ -537,7 +537,7 @@ void AutoDrive::publishDriverlessState()
 		driverless_state_.state      = system_state_;
 		
 		driverless_state_.nearest_object_distance = avoid_min_obj_distance_;
-		driverless_state_.command_speed = controlCmd2_.set_speed * 3.6;
+		driverless_state_.command_speed = controlCmd2_.speed * 3.6;
 
 		pub_driverless_state_.publish(driverless_state_);
 	}

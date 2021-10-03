@@ -9,21 +9,19 @@
 #include <serial/serial.h>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
-#include <logistics_msgs/RealState.h>
 #include <logistics_msgs/PidParams.h>
-#include <logistics_msgs/GoalState.h>
 #include <stdio.h>
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
-#include <logistics_msgs/ControlCmd2.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Twist.h>
-#include <std_msgs/Int32.h>
-#include <std_msgs/Float32.h>
 #include <string>
 #include <vector>
+
+#include <driverless_common/VehicleState.h>
+#include <driverless_common/VehicleCtrlCmd.h>
 
 class Uppercontrol
 {
@@ -47,8 +45,7 @@ private:
 	double generate_real_speed(double& temp1,double& temp2);
 	uint8_t sumCheck(const uint8_t* pkg_buffer, int pkg_len);
 	
-	void GoalState_callback(const logistics_msgs::GoalState::ConstPtr& msg);
-	void Cmd2_callback(const logistics_msgs::ControlCmd2::ConstPtr& msg);
+	void D_Cmd2_callback(const driverless_common::VehicleCtrlCmd::ConstPtr& msg);
 	void Pid_callback(const logistics_msgs::PidParams::ConstPtr& pid);
 	
 	void print(const uint8_t* buf, int len)
@@ -65,23 +62,21 @@ private:
 	
 	serial::Serial *m_serial_port;
 	
-	ros::Publisher odom_pub;
-	ros::Publisher m_pub_state;
-	ros::Subscriber m_sub_state;
-	ros::Subscriber m_sub_controlCmd2;
+	ros::Publisher odom_pub_;
+	ros::Publisher m_pub_state_;
 	
-	ros::Subscriber m_sub_goal;
-	ros::Subscriber m_sub_pid_params;
+	ros::Subscriber m_sub_controlCmd2_;
+	ros::Subscriber m_sub_pid_params_;
 	
-	std::string car_state;
 	tf::TransformBroadcaster odom_broadcaster;
 	ros::Time current_time, last_time;
 	nav_msgs::Odometry odom;
-	logistics_msgs::RealState m_state;
+	
+	driverless_common::VehicleState m_state_; 
 	
 	bool prase_flag_;
 	double x,y,th,vx,vy,vth;
-	double real_speed_left,real_speed_right,real_angle,real_speed,real_touque;
+	double real_speed_left,real_speed_right,real_angle,real_speed,real_touque,real_brake;
 	double left_wheel_speed,right_wheel_speed,speed;
 };
 

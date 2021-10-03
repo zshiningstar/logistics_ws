@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   logistics_msgs
   tf
+  driverless_common
 )
 
 catkin_package(

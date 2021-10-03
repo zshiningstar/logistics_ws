@@ -233,8 +233,8 @@ void AutoDrive::doWork()
 		if(as_->isActive()) //判断action server是否为活动，防止函数的非服务调用导致的错误
 		{
 			driverless_common::DoDriverlessTaskFeedback feedback;
-			feedback.speed = cmd.set_speed;
-			feedback.steer_angle = cmd.set_roadWheelAngle;
+			feedback.speed = cmd.speed;
+			feedback.steer_angle = cmd.roadwheel_angle;
 			as_->publishFeedback(feedback);
 
 			if(as_->isPreemptRequested()) 
@@ -265,31 +265,31 @@ void AutoDrive::doWork()
                 ②避障速度控制
 				③跟车速度控制
  */
- logistics_msgs::ControlCmd2 AutoDrive::decisionMaking()
+ driverless_common::VehicleCtrlCmd AutoDrive::decisionMaking()
  {
  	std::lock_guard<std::mutex> lock2(cmd2_mutex_);
-	controlCmd2_.set_roadWheelAngle = tracker_cmd_.roadWheelAngle;;//前轮转角
-	controlCmd2_.set_speed = fabs(tracker_cmd_.speed); //优先使用跟踪器速度指令
+	controlCmd2_.roadwheel_angle = tracker_cmd_.roadWheelAngle;;//前轮转角
+	controlCmd2_.speed = fabs(tracker_cmd_.speed); //优先使用跟踪器速度指令
  	
 	//若当前状态为强制使用外部控制指令，则忽悠其他指令源
 	if(system_state_ == State_ForceExternControl)
 	{
 		std::lock_guard<std::mutex> lock_extern_cmd(extern_cmd_mutex_);
 		if(extern_cmd_.speed_validity)
-			controlCmd2_.set_speed = extern_cmd_.speed;
+			controlCmd2_.speed = extern_cmd_.speed;
 
 		if(extern_cmd_.steer_validity)
-			controlCmd2_.set_roadWheelAngle = extern_cmd_.roadWheelAngle;
+			controlCmd2_.roadwheel_angle = extern_cmd_.roadWheelAngle;
 	}
 	//非外部控制工况且定位状态无效，停车！
 	else if(!vehicle_state_.getPoseValid())
 	{
-		controlCmd2_.set_speed = 0;
+		controlCmd2_.speed = 0;
 	}
 	
-//	controlCmd2_.set_roadWheelAngle = steerPidCtrl(controlCmd2_.set_roadWheelAngle) + 0.0;
+//	controlCmd2_.roadwheel_angle = steerPidCtrl(controlCmd2_.roadwheel_angle) + 0.0;
 
-	static float lastCtrlSpeed = controlCmd2_.set_speed;
+	static float lastCtrlSpeed = controlCmd2_.speed;
 	float speed_now = vehicle_state_.getSpeed(LOCK);
 	float deltaT = decisionMakingDuration_;
 	static float safety_distance_ = 4.0; //m
@@ -322,19 +322,19 @@ void AutoDrive::doWork()
 	if(expectSpeed <= 0) 
 		expectSpeed = 0;
 		
-	else if(expectSpeed > controlCmd2_.set_speed)
-		expectSpeed = controlCmd2_.set_speed;
-	controlCmd2_.set_speed = expectSpeed;
-	lastCtrlSpeed = controlCmd2_.set_speed;
+	else if(expectSpeed > controlCmd2_.speed)
+		expectSpeed = controlCmd2_.speed;
+	controlCmd2_.speed = expectSpeed;
+	lastCtrlSpeed = controlCmd2_.speed;
 	
 	if(system_state_ == State_Drive) 
-		controlCmd2_.set_speed = fabs(controlCmd2_.set_speed);
+		controlCmd2_.speed = fabs(controlCmd2_.speed);
 	else if(system_state_ == State_Reverse)
 	{
-		controlCmd2_.set_speed = -fabs(controlCmd2_.set_speed);
+		controlCmd2_.speed = -fabs(controlCmd2_.speed);
 	}
 
-	//std::cout << controlCmd2_.set_speed << "\t" << expectSpeed << "\t" << deltaT << "\t" << expectAccel << std::endl;
+	//std::cout << controlCmd2_.speed << "\t" << expectSpeed << "\t" << deltaT << "\t" << expectAccel << std::endl;
 
 	return controlCmd2_;
  }
