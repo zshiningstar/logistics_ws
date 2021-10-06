@@ -45,7 +45,7 @@ private:
 	double generate_real_speed(double& temp1,double& temp2);
 	uint8_t sumCheck(const uint8_t* pkg_buffer, int pkg_len);
 	
-	void D_Cmd2_callback(const driverless_common::VehicleCtrlCmd::ConstPtr& msg);
+	void D_Cmd_callback(const driverless_common::VehicleCtrlCmd::ConstPtr& msg);
 	void Pid_callback(const logistics_msgs::PidParams::ConstPtr& pid);
 	
 	void print(const uint8_t* buf, int len)
@@ -64,17 +64,20 @@ private:
 	
 	ros::Publisher odom_pub_;
 	ros::Publisher m_pub_state_;
+	ros::Publisher m_cmd_state_;
 	
-	ros::Subscriber m_sub_controlCmd2_;
+	ros::Subscriber m_sub_controlCmd_;
 	ros::Subscriber m_sub_pid_params_;
 	
 	tf::TransformBroadcaster odom_broadcaster;
 	ros::Time current_time, last_time;
 	nav_msgs::Odometry odom;
 	
-	driverless_common::VehicleState m_state_; 
+	driverless_common::VehicleState m_state_;
+	driverless_common::VehicleCtrlCmd m_cmd_;
 	
 	bool prase_flag_;
+	bool cmd_feedback_;
 	double x,y,th,vx,vy,vth;
 	double real_speed_left,real_speed_right,real_angle,real_speed,real_touque,real_brake;
 	double left_wheel_speed,right_wheel_speed,speed;

@@ -1,8 +1,10 @@
 <!-- -->
 <launch>
 	<node pkg="pc_stm32" type="pc_stm32" name="pc_stm32" output="screen">
-		<param name="car_state" value="/car_state" />
-		<param name="car_goal" value="/car_goal" />
+		<param name="vehicle_state" value="/vehicle_state" />
+		<param name="cmd_feedback" value="false"/>
+		<param name="vehicle_cmd_state" value="/vehicle_cmd_state" />
+		<param name="vehicle_cmd" value="/vehicle_cmd" />
 		<param name="pid_params" value="/pid_params" />
 		<param name="port_name" value="/dev/stm" />
 		<param name="baudrate" value="115200" />

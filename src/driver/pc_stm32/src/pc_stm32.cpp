@@ -1,5 +1,7 @@
 #include"pc_stm.h"
 
+#define __NAME__ "pc_stm_node"
+
 using namespace std;
 #define MAX_ARRAY 50
 #define MAX_STEER_ANGLE 12.3
@@ -72,13 +74,16 @@ bool Uppercontrol::init()
 	ros::NodeHandle nh;
 	ros::NodeHandle nh_private("~");
 	odom_pub_ = nh.advertise<nav_msgs::Odometry>("/wheel_odom", 50);
-	m_pub_state_ = nh.advertise<driverless_common::VehicleState>(nh_private.param<std::string>("car_state","/car_state"),10);
+	m_pub_state_ = nh.advertise<driverless_common::VehicleState>(nh_private.param<std::string>("vehicle_state","/vehicle_state"),10);
+	m_cmd_state_ = nh.advertise<driverless_common::VehicleCtrlCmd>(nh_private.param<std::string>("vehicle_cmd_state","/vehicle_cmd_state"),10);
 	
 	std::string pid_params = nh_private.param<std::string>("pid_params","/pid_params");
 	
-	std::string m_controlCmd2_goal = nh_private.param<std::string>("controlCmd2","/controlCmd2");
-	m_sub_controlCmd2_ = nh.subscribe(m_controlCmd2_goal ,1,&Uppercontrol::D_Cmd2_callback, this);
+	std::string m_controlCmd_goal = nh_private.param<std::string>("vehicle_cmd","/vehicle_cmd");
+	m_sub_controlCmd_ = nh.subscribe(m_controlCmd_goal ,1,&Uppercontrol::D_Cmd_callback, this);
 	m_sub_pid_params_ = nh.subscribe(pid_params,1,&Uppercontrol::Pid_callback, this);
+	
+	nh_private.param<bool>("cmd_feedback", cmd_feedback_, false);
 	
 	std::string port_name = nh_private.param<std::string>("port_name","/dev/pts/23");
 	int baudrate = nh_private.param<int>("baudrate",115200);
@@ -222,12 +227,21 @@ void Uppercontrol::parseFromStmVehicleState(const unsigned char* buffer)
 	real_brake             = buffer[12];
 	real_speed             = generate_real_speed(real_speed_left,real_speed_right);
 	
-//	m_state_.header.stamp = ros::Time::now();
-//	m_state_.header.frame_id = "car_state";
 	m_state_.speed = real_speed;
 	m_state_.roadwheel_angle = real_angle;
 	m_state_.driverless = true;
 	m_state_.manualCtrlDetected = false;
+	
+	if(m_cmd_.gear == driverless_common::VehicleCtrlCmd::GEAR_DRIVE)
+		m_state_.gear = driverless_common::VehicleState::GEAR_DRIVE;
+	else if(m_cmd_.gear == driverless_common::VehicleCtrlCmd::GEAR_REVERSE)
+		m_state_.gear = driverless_common::VehicleState::GEAR_REVERSE;
+	else if(m_cmd_.gear == driverless_common::VehicleCtrlCmd::GEAR_PARKING)
+		m_state_.gear = driverless_common::VehicleState::GEAR_PAKING;
+	else if(m_cmd_.gear == driverless_common::VehicleCtrlCmd::GEAR_NEUTRAL)
+		m_state_.gear = driverless_common::VehicleState::GEAR_NEUTRAL;
+	else
+		ROS_ERROR("[%s] The current gear was unknown!", __NAME__);
 	m_pub_state_.publish(m_state_);
 	
 	/*
@@ -293,11 +307,24 @@ void Uppercontrol::parseFromStmVehicleState(const unsigned char* buffer)
 		*/
 }
 
-void Uppercontrol::D_Cmd2_callback(const driverless_common::VehicleCtrlCmd::ConstPtr& msg)
+void Uppercontrol::D_Cmd_callback(const driverless_common::VehicleCtrlCmd::ConstPtr& msg)
 {	
 	static uint8_t pkgId = 0x01;
 	const uint8_t dataLen = 6;
 	static uint8_t buf[11] = {0x66, 0xcc, pkgId, dataLen };
+	
+	m_cmd_.gear = msg->gear;
+	m_cmd_.speed = msg->speed;
+	m_cmd_.roadwheel_angle = msg->roadwheel_angle;
+	m_cmd_.brake = msg->brake;
+	m_cmd_.emergency_brake = msg->emergency_brake;
+	m_cmd_.hand_brake = msg->hand_brake;
+	m_cmd_.left_turn_light = msg->left_turn_light;
+	m_cmd_.right_turn_light = msg->right_turn_light;
+	m_cmd_.brake_light = msg->brake_light;
+	m_cmd_.horn = msg->horn;
+	if(cmd_feedback_)
+		m_cmd_state_.publish(m_cmd_);
 
 	uint16_t u16_speed = msg->speed * 100.0 + 30000;
 	buf[5]  = u16_speed >> 8;  
