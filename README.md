@@ -19,6 +19,8 @@ sudo make install
 * 编译
 ```
 cd logistics_ws/
+git submoudle init
+git submoudle update
 rosdep install --from-paths src --ignore-src -r -y
 sudo apt-get install libpcap-dev
 sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
