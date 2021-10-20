@@ -230,7 +230,7 @@ void Uppercontrol::parseFromStmVehicleState(const unsigned char* buffer)
 	m_state_.speed = real_speed;
 	m_state_.roadwheel_angle = real_angle;
 	m_state_.driverless = true;
-	m_state_.manualCtrlDetected = false;
+	m_state_.manualctrl_detected = false;
 	
 	if(m_cmd_.gear == driverless_common::VehicleCtrlCmd::GEAR_DRIVE)
 		m_state_.gear = driverless_common::VehicleState::GEAR_DRIVE;
@@ -319,8 +319,8 @@ void Uppercontrol::D_Cmd_callback(const driverless_common::VehicleCtrlCmd::Const
 	m_cmd_.brake = msg->brake;
 	m_cmd_.emergency_brake = msg->emergency_brake;
 	m_cmd_.hand_brake = msg->hand_brake;
-	m_cmd_.left_turn_light = msg->left_turn_light;
-	m_cmd_.right_turn_light = msg->right_turn_light;
+	m_cmd_.turnlight_l = msg->turnlight_l;
+	m_cmd_.turnlight_r = msg->turnlight_r;
 	m_cmd_.brake_light = msg->brake_light;
 	m_cmd_.horn = msg->horn;
 	if(cmd_feedback_)
